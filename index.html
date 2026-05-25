@@ -194,7 +194,7 @@ function handleFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', codepage: 65001 });
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', codepage: 932 });
 
       // 全シートをまとめて読み込む（ヘッダーは1枚目のみ使用）
       let allRows = [];
