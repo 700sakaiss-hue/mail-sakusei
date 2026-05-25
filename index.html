@@ -194,13 +194,13 @@ function handleFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', codepage: 65001 });
 
       // 全シートをまとめて読み込む（ヘッダーは1枚目のみ使用）
       let allRows = [];
       wb.SheetNames.forEach((name, si) => {
         const ws = wb.Sheets[name];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
         if (!rows.length) return;
         if (si === 0) {
           allRows = rows;
