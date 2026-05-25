@@ -363,16 +363,31 @@ function handleFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    // 全シートをまとめて読み込む（ヘッダーは1枚目のみ使用）
+    let allRows = [];
+    wb.SheetNames.forEach((name, si) => {
+      const ws = wb.Sheets[name];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!rows.length) return;
+      if (si === 0) {
+        allRows = rows;
+      } else {
+        allRows = allRows.concat(rows.slice(1));
+      }
+    });
+
+    rawRows = allRows;
     if (!rawRows.length) return;
+
+    const sheetCount = wb.SheetNames.length;
     const picker = document.getElementById('colPicker');
     picker.innerHTML = rawRows[0].map((h, i) =>
       `<option value="${i}">${h || '列'+(i+1)}</option>`
     ).join('');
     document.getElementById('colSelect').style.display = 'flex';
     dropZone.classList.add('success');
-    dropZone.innerHTML = `<div class="drop-zone-icon">✅</div><p>${file.name} 読み込み完了<small>列を選んで「読み込む」を押してください</small></p>`;
+    dropZone.innerHTML = `<div class="drop-zone-icon">✅</div><p>${file.name} 読み込み完了<small>${sheetCount}シート・合計 ${rawRows.length - 1} 行 ／ 列を選んで「読み込む」を押してください</small></p>`;
   };
   reader.readAsArrayBuffer(file);
 }
