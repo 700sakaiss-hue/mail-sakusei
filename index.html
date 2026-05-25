@@ -214,18 +214,32 @@ function handleFile(file) {
 
       const sheetCount = wb.SheetNames.length;
       const picker = document.getElementById('colPicker');
-      picker.innerHTML = rawRows[0].map((h, i) =>
-        `<option value="${i}">${h || '列'+(i+1)}</option>`
-      ).join('');
-      document.getElementById('colSelect').style.display = 'flex';
+      const colLabels = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+      picker.innerHTML = rawRows[0].map((h, i) => {
+        const col = colLabels[i] || (i+1)+'列目';
+        return `<option value="${i}">${col}列 (${i+1}番目)</option>`;
+      }).join('');
+      // C列(index=2)を自動選択して即読み込む
+      document.getElementById('colSelect').style.display = 'none';
+      autoLoadColumn(2);
       dropZone.classList.add('success');
-      dropZone.innerHTML = `<div class="drop-zone-icon">✅</div><p>${file.name} 読み込み完了<small>${sheetCount}シート・合計 ${rawRows.length - 1} 行 ／ 列を選んで「読み込む」を押してください</small></p>`;
+      dropZone.innerHTML = `<div class="dz-icon">✅</div><p>${file.name} 読み込み完了<small>${sheetCount}シート・${rawRows.length - 1}件のアドレスを取得しました</small></p>`;
     } catch(err) {
       alert('ファイルの読み込みに失敗しました。\n' + err.message + '\n\n.xlsx形式で保存し直してから試してください。');
       dropZone.classList.remove('success');
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function autoLoadColumn(idx) {
+  let added = 0;
+  rawRows.slice(1).forEach(r => {
+    const v = (r[idx] || '').toString().trim();
+    if (v && !addresses.includes(v)) { addresses.push(v); added++; }
+  });
+  renderTags();
+  renderBatches();
 }
 
 function loadColumn() {
