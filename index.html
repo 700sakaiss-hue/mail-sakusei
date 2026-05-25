@@ -144,6 +144,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 BCCで全員に同じ内容が送信されます。"></textarea>
     </div>
+    <div class="field">
+      <label class="field-label">署名 <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted2);">（任意・本文の末尾に自動で追加されます）</span></label>
+      <textarea id="signature" rows="4" placeholder="例：&#10;--&#10;堺総合サービス株式会社&#10;北口 〇〇&#10;TEL: 000-0000-0000"></textarea>
+    </div>
   </div>
 
   <div class="step" id="batchSection" style="display:none;">
@@ -331,8 +335,11 @@ function renderBatches() {
 
 function buildUrl(bccList) {
   const subject = encodeURIComponent(document.getElementById('subject').value);
-  const body    = encodeURIComponent(document.getElementById('body').value);
-  const bcc     = encodeURIComponent(bccList.filter(isValid).join(','));
+  const sig = document.getElementById('signature').value.trim();
+  const bodyText = document.getElementById('body').value;
+  const fullBody = sig ? bodyText + '\n\n' + sig : bodyText;
+  const body = encodeURIComponent(fullBody);
+  const bcc  = encodeURIComponent(bccList.filter(isValid).join(','));
   return `https://mail.google.com/mail/?view=cm&bcc=${bcc}&su=${subject}&body=${body}`;
 }
 
