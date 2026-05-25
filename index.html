@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gmail BCC 一斉送信</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F3EE;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE7;
+    --border: #E2DDD6;
+    --border2: #CCC8C0;
+    --text: #1A1814;
+    --text2: #6B6560;
+    --text3: #9E9890;
+    --accent: #2D5A3D;
+    --accent-light: #E8F2EC;
+    --accent2: #1E3D2A;
+    --danger: #B03A2E;
+    --danger-light: #FBEAE8;
+    --warn: #7D5A1E;
+    --warn-light: #FEF6E4;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--accent);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+  }
+  header .logo {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  header .logo span { opacity: 0.6; font-weight: 400; margin-left: 6px; font-size: 13px; }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 28px; height: 28px;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.over { background: var(--accent-light); border-color: var(--accent); }
+  .drop-zone-icon { font-size: 28px; margin-bottom: 8px; }
+  .drop-zone p { font-size: 13px; color: var(--text2); }
+  .drop-zone p small { display: block; font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .drop-zone.success { border-color: var(--accent); background: var(--accent-light); }
+  .drop-zone.success p { color: var(--accent); font-weight: 500; }
+
+  .col-select { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .col-select label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+  select {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+
+  label.field-label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; letter-spacing: 0.02em; text-transform: uppercase; }
+
+  input[type=text], textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+
+  .manual-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .manual-row input { flex: 1; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    padding: 3px 10px 3px 12px;
+    display: flex; align-items: center; gap: 6px;
+    color: var(--text2);
+    transition: background 0.1s;
+  }
+  .tag:hover { background: var(--border); }
+  .tag.invalid { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
+  .tag button { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 15px; line-height: 1; padding: 0; display: flex; align-items: center; }
+  .tag button:hover { color: var(--danger); }
+  .addr-count { font-size: 12px; color: var(--text3); margin-top: 8px; }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  input[type=range] {
+    flex: 1; height: 4px; -webkit-appearance: none;
+    background: var(--border2); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--accent);
+    cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .slider-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px; font-weight: 500;
+    min-width: 36px; text-align: center;
+    background: var(--accent-light); color: var(--accent);
+    border-radius: var(--radius-sm); padding: 3px 8px;
+  }
+
+  .batch-list { display: flex; flex-direction: column; gap: 8px; }
+  .batch-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    transition: background 0.1s;
+  }
+  .batch-row.done { border-color: var(--accent); background: var(--accent-light); }
+  .batch-info { flex: 1; }
+  .batch-name { font-size: 13px; font-weight: 600; }
+  .batch-sub { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .batch-row.done .batch-name { color: var(--accent); }
+  .badge {
+    font-size: 11px; font-weight: 500; padding: 3px 10px;
+    border-radius: 999px; white-space: nowrap;
+  }
+  .badge-wait { background: var(--warn-light); color: var(--warn); }
+  .badge-done { background: var(--accent-light); color: var(--accent); }
+
+  .note {
+    font-size: 12px; color: var(--text2);
+    background: var(--warn-light); border-left: 3px solid #C9A227;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 10px 14px; margin-top: 12px; line-height: 1.6;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface); color: var(--text);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, border-color 0.1s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--border2); }
+
+  .btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0.5rem; }
+
+  .spacer { margin-bottom: 0.5rem; }
+  .field-group { margin-bottom: 1rem; }
+  .field-group:last-child { margin-bottom: 0; }
+
+  .progress-bar-wrap {
+    height: 4px; background: var(--border); border-radius: 2px;
+    margin-top: 12px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; background: var(--accent); border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .empty-state {
+    text-align: center; padding: 1.5rem;
+    color: var(--text3); font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Gmail BCC 一斉送信 <span>by 堺総合サービス</span></div>
+</header>
+
+<div class="container">
+
+  <!-- ① Excelアップロード -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">①</div>
+      <div class="section-title">Excelファイル読み込み</div>
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
+      <div class="drop-zone-icon">📂</div>
+      <p>.xlsx / .csv をドラッグ＆ドロップ、またはクリックして選択
+        <small>1行目をヘッダーとして読み込みます</small>
+      </p>
+    </div>
+    <input type="file" id="fileIn" accept=".xlsx,.csv" style="display:none">
+    <div class="col-select" id="colSelect" style="display:none;">
+      <label>メールアドレスの列：</label>
+      <select id="colPicker"></select>
+      <button class="btn btn-sm" onclick="loadColumn()">✓ 読み込む</button>
+    </div>
+  </div>
+
+  <!-- ② 送信先 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">②</div>
+      <div class="section-title">送信先アドレス</div>
+    </div>
+    <div class="manual-row">
+      <input type="text" id="manualEmail" placeholder="手動で追加: example@gmail.com">
+      <button class="btn" onclick="addManual()">＋ 追加</button>
+    </div>
+    <div class="tag-list" id="tagList"><span class="addr-count" style="margin-top:0;">アドレスが追加されると表示されます</span></div>
+    <div class="addr-count" id="addrCount"></div>
+  </div>
+
+  <!-- ③ BCC分割設定 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">③</div>
+      <div class="section-title">BCC分割設定</div>
+    </div>
+    <label class="field-label">1回あたりの送信人数</label>
+    <div class="slider-row">
+      <input type="range" id="batchSize" min="10" max="100" step="10" value="50"
+        oninput="document.getElementById('batchVal').textContent=this.value+'人'; renderBatches()">
+      <span class="slider-val" id="batchVal">50人</span>
+    </div>
+    <div class="note">⚠️ Gmailは1日あたり500通まで。大量送信の場合は日をまたいで実行してください。</div>
+  </div>
+
+  <!-- ④ メール内容 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon">④</div>
+      <div class="section-title">メール内容</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">件名</label>
+      <input type="text" id="subject" placeholder="例：〇〇点検結果のご連絡">
+    </div>
+    <div class="field-group">
+      <label class="field-label">本文</label>
+      <textarea id="body" placeholder="本文を入力してください...&#10;&#10;BCCで全員に同じ内容が送信されます。"></textarea>
+    </div>
+  </div>
+
+  <!-- ⑤ バッチ一覧 -->
+  <div class="section" id="batchSection" style="display:none;">
+    <div class="section-header">
+      <div class="section-icon">⑤</div>
+      <div class="section-title">送信バッチ</div>
+    </div>
+    <div class="batch-list" id="batchList"></div>
+    <div class="progress-bar-wrap" id="progressWrap" style="display:none;">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:10px;line-height:1.6;">
+      各バッチの「開く」ボタンを押すとGmailの作成画面が開きます。BCCに自動セットされます。<br>
+      ポップアップがブロックされた場合はブラウザのアドレスバーから許可してください。
+    </div>
+  </div>
+
+  <!-- アクション -->
+  <div class="actions">
+    <button class="btn" onclick="clearAll()">🗑 リセット</button>
+    <button class="btn btn-primary" id="openAllBtn" onclick="openAllBatches()" disabled>
+      ✉ 全バッチをGmailで開く
+    </button>
+  </div>
+
+</div>
+
+<script>
+let addresses = [];
+let rawRows = [];
+let batches = [];
+let batchDone = [];
+
+const dropZone = document.getElementById('dropZone');
+const fileIn   = document.getElementById('fileIn');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  handleFile(e.dataTransfer.files[0]);
+});
+fileIn.addEventListener('change', () => handleFile(fileIn.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (!rawRows.length) return;
+    const picker = document.getElementById('colPicker');
+    picker.innerHTML = rawRows[0].map((h, i) =>
+      `<option value="${i}">${h || '列'+(i+1)}</option>`
+    ).join('');
+    document.getElementById('colSelect').style.display = 'flex';
+    dropZone.classList.add('success');
+    dropZone.innerHTML = `<div class="drop-zone-icon">✅</div><p>${file.name} 読み込み完了<small>列を選んで「読み込む」を押してください</small></p>`;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function loadColumn() {
+  const idx = parseInt(document.getElementById('colPicker').value);
+  let added = 0;
+  rawRows.slice(1).forEach(r => {
+    const v = (r[idx] || '').toString().trim();
+    if (v && !addresses.includes(v)) { addresses.push(v); added++; }
+  });
+  renderTags();
+  renderBatches();
+  if (added > 0) {
+    const btn = document.querySelector('#colSelect button');
+    btn.textContent = `✓ ${added}件追加済`;
+  }
+}
+
+function isValid(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+function addManual() {
+  const inp = document.getElementById('manualEmail');
+  const val = inp.value.trim();
+  if (val && !addresses.includes(val)) {
+    addresses.push(val);
+    renderTags();
+    renderBatches();
+  }
+  inp.value = '';
+  inp.focus();
+}
+
+document.getElementById('manualEmail').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addManual();
+});
+
+function removeAddr(i) {
+  addresses.splice(i, 1);
+  renderTags();
+  renderBatches();
+}
+
+function renderTags() {
+  const list = document.getElementById('tagList');
+  if (!addresses.length) {
+    list.innerHTML = '<span class="addr-count" style="margin-top:0;">アドレスが追加されると表示されます</span>';
+    document.getElementById('addrCount').textContent = '';
+    return;
+  }
+  list.innerHTML = addresses.map((a, i) =>
+    `<span class="tag ${isValid(a)?'':'invalid'}">${a}
+      <button onclick="removeAddr(${i})" aria-label="削除">×</button>
+    </span>`
+  ).join('');
+  const invalid = addresses.filter(a => !isValid(a)).length;
+  document.getElementById('addrCount').textContent =
+    `合計 ${addresses.length} 件${invalid ? '（⚠ 無効アドレス ' + invalid + ' 件）' : ''}`;
+}
+
+function renderBatches() {
+  const size = parseInt(document.getElementById('batchSize').value);
+  batches = [];
+  for (let i = 0; i < addresses.length; i += size) batches.push(addresses.slice(i, i + size));
+  batchDone = new Array(batches.length).fill(false);
+
+  const sec = document.getElementById('batchSection');
+  const btn = document.getElementById('openAllBtn');
+  if (!batches.length) { sec.style.display = 'none'; btn.disabled = true; return; }
+
+  sec.style.display = 'block';
+  btn.disabled = false;
+
+  document.getElementById('batchList').innerHTML = batches.map((b, i) => `
+    <div class="batch-row" id="brow${i}">
+      <div class="batch-info">
+        <div class="batch-name">バッチ ${i+1} &nbsp;／&nbsp; ${b.length}人</div>
+        <div class="batch-sub">${b.slice(0,3).join(', ')}${b.length>3?' …他':''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge badge-wait" id="badge${i}">未送信</span>
+        <button class="btn btn-sm" onclick="openBatch(${i})">開く →</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('progressWrap').style.display = 'block';
+  updateProgress();
+}
+
+function buildUrl(bccList) {
+  const subject = encodeURIComponent(document.getElementById('subject').value);
+  const body    = encodeURIComponent(document.getElementById('body').value);
+  const bcc     = encodeURIComponent(bccList.filter(isValid).join(','));
+  return `https://mail.google.com/mail/?view=cm&bcc=${bcc}&su=${subject}&body=${body}`;
+}
+
+function openBatch(i) {
+  window.open(buildUrl(batches[i]), '_blank');
+  batchDone[i] = true;
+  document.getElementById('badge'+i).textContent = '開いた ✓';
+  document.getElementById('badge'+i).className = 'badge badge-done';
+  document.getElementById('brow'+i).classList.add('done');
+  updateProgress();
+}
+
+function openAllBatches() {
+  batches.forEach((_, i) => { if (!batchDone[i]) openBatch(i); });
+}
+
+function updateProgress() {
+  const done = batchDone.filter(Boolean).length;
+  const pct = batches.length ? Math.round(done / batches.length * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+
+function clearAll() {
+  addresses = []; rawRows = []; batches = []; batchDone = [];
+  renderTags();
+  document.getElementById('subject').value = '';
+  document.getElementById('body').value = '';
+  document.getElementById('colSelect').style.display = 'none';
+  document.getElementById('batchSection').style.display = 'none';
+  document.getElementById('openAllBtn').disabled = true;
+  dropZone.classList.remove('success');
+  dropZone.innerHTML = `<div class="drop-zone-icon">📂</div><p>.xlsx / .csv をドラッグ＆ドロップ、またはクリックして選択<small>1行目をヘッダーとして読み込みます</small></p>`;
+  fileIn.value = '';
+}
+</script>
+</body>
+</html>
