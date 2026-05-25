@@ -161,6 +161,7 @@ BCCで全員に同じ内容が送信されます。"></textarea>
   <div class="actions">
     <button class="btn btn-danger" onclick="clearAll()">✕ リセット</button>
     <button class="btn btn-primary" id="openAllBtn" onclick="openAllBatches()" disabled>✉ 全バッチをGmailで開く</button>
+    <button class="btn" id="resetBatchBtn" onclick="resetBatches()" style="display:none;">↩ 送信済みをリセット</button>
   </div>
 </div>
 
@@ -344,14 +345,26 @@ function openBatch(i) {
   updateProgress();
 }
 
+function resetBatches() {
+  batchDone = new Array(batches.length).fill(false);
+  batches.forEach((b, i) => {
+    document.getElementById('badge'+i).textContent = '未送信';
+    document.getElementById('badge'+i).className = 'badge badge-wait';
+    document.getElementById('brow'+i).classList.remove('done');
+  });
+  updateProgress();
+}
+
 function openAllBatches() {
-  batches.forEach((_, i) => { if (!batchDone[i]) openBatch(i); });
+  batches.forEach((_, i) => openBatch(i));
 }
 
 function updateProgress() {
   const done = batchDone.filter(Boolean).length;
   const pct = batches.length ? Math.round(done / batches.length * 100) : 0;
   document.getElementById('progressBar').style.width = pct + '%';
+  const resetBtn = document.getElementById('resetBatchBtn');
+  if (resetBtn) resetBtn.style.display = done > 0 ? 'inline-flex' : 'none';
 }
 
 function clearAll() {
