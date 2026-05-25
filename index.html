@@ -125,9 +125,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
     <div class="step-head"><div class="step-num">3</div><div class="step-title">BCC分割設定</div></div>
     <label class="field-label">1回あたりの送信人数</label>
     <div class="slider-row">
-      <input type="range" id="batchSize" min="10" max="100" step="10" value="50"
+      <input type="range" id="batchSize" min="10" max="100" step="10" value="60"
         oninput="document.getElementById('batchVal').textContent=this.value+'人'; renderBatches()">
-      <span class="slider-val" id="batchVal">50人</span>
+      <span class="slider-val" id="batchVal">60人</span>
     </div>
     <div class="note">⚠ Gmailは1日あたり最大500通まで。150人なら3バッチで送信できます。</div>
   </div>
